@@ -2,13 +2,16 @@
 #define TOKEN_CODES_H
 
 /* Codici numerici usati per i token del linguaggio */
-enum { 
+enum {
     TOK_INT=1024,
     TOK_REAL,
     TOK_VOID,
     TOK_IF,
     TOK_ELSE,
     TOK_WHILE,
+    TOK_DO,
+    TOK_FOR,
+    TOK_IN,
     TOK_RETURN,
     TOK_WRITE,
     TOK_READ,
@@ -23,4 +26,3 @@ enum {
 };
 
 #endif
-

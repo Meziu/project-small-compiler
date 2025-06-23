@@ -21,6 +21,8 @@ static AST parse_assignment(void);
 static AST parse_if(void);
 static AST parse_else(void);
 static AST parse_while(void);
+static AST parse_do_while(void);
+static AST parse_for(void);
 static AST parse_block(void);
 static AST parse_write(void);
 static AST parse_write_item(void);
@@ -77,7 +79,7 @@ static AST parse_func_def(void) {
 static AST parse_type(void) {
     ValueType vt=TYPE_UNKNOWN;
     int tok=sc_current();
-    if (tok==TOK_INT) 
+    if (tok==TOK_INT)
         vt=TYPE_INT;
     else if (tok==TOK_REAL)
         vt=TYPE_REAL;
@@ -163,6 +165,10 @@ static AST parse_statement(void) {
         return parse_if();
     else if (tok==TOK_WHILE)
         return parse_while();
+    else if (tok==TOK_DO)
+        return parse_do_while();
+    else if (tok==TOK_FOR)
+        return parse_for();
     else if (tok==TOK_WRITE)
         return parse_write();
     else if (tok==TOK_READ)
@@ -172,8 +178,8 @@ static AST parse_statement(void) {
     else if (tok==TOK_CALL)
         return parse_call();
     else
-        error(sc_current_line(), 
-                "Unvalid token for the start of a statement: '%s'", 
+        error(sc_current_line(),
+                "Unvalid token for the start of a statement: '%s'",
                 sc_token_name(tok));
     return NULL;
 }
@@ -215,6 +221,41 @@ static AST parse_while(void) {
     AST expr=parse_expr();
     AST block=parse_block();
     return make_ast2(while_check, while_gen, line, expr, block);
+}
+
+static AST parse_do_while(void) {
+    int line=sc_current_line();
+    sc_match(TOK_DO);
+    AST block=parse_block();
+    sc_match(TOK_WHILE);
+    AST expr=parse_expr();
+    sc_match('!'); // La condizione non è seguita da un blocco, bensì è conclusiva.
+    return make_ast2(do_while_check, do_while_gen, line, expr, block);
+}
+
+static AST parse_for(void) {
+    int line=sc_current_line();
+    sc_match(TOK_FOR);
+
+    // Identificatore della variabile di iterazione utilizzata.
+    char* iter_name = sc_current_id();
+    sc_advance();
+
+    sc_match(TOK_IN);
+
+    // Espressione di inizializzazione
+    AST init=parse_expr();
+
+    sc_match(':'); // Separatore tra inizializzatore e condizione.
+
+    // Espressione di condizione
+    AST cond=parse_expr();
+    // Blocco di istruzioni del for
+    AST block=parse_block();
+
+    AST node = make_ast3(for_check, for_gen, line, init, cond, block);
+    node->id = iter_name; // Utilizziamo il campo "id" dell'AST per indicare l'identificatore della variabile iterativa.
+    return node;
 }
 
 static AST parse_block(void) {
@@ -460,4 +501,3 @@ static AST parse_actual(void) {
     AST expr=parse_expr();
     return make_ast1(actual_check, actual_gen, expr->line, expr);
 }
-

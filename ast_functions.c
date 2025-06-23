@@ -19,7 +19,7 @@ static void gen_address(SymbolTable *sym, char *id);
  * IMPLEMENTAZIONE DELLE FUNZIONI PUBBLICHE DEL MODULO
  -------------------------------------------------------*/
 
-/* Un nodo 'empty' non ha figli e non fa niente 
+/* Un nodo 'empty' non ha figli e non fa niente
  * né in fase di analisi semantica né in fase
  * di generazione del codice.
  */
@@ -39,7 +39,7 @@ void seq_check(AST ast, SymbolTable *sym) {
     for(i=0; i<MAX_CHILDREN; i++) {
         if (ast->child[i]!=NULL)
             ast_check(ast->child[i], sym);
-    }    
+    }
 }
 
 void seq_gen(AST ast, SymbolTable *sym) {
@@ -47,7 +47,7 @@ void seq_gen(AST ast, SymbolTable *sym) {
     for(i=0; i<MAX_CHILDREN; i++) {
         if (ast->child[i]!=NULL)
             ast_gen(ast->child[i], sym);
-    }    
+    }
 }
 
 /* Un nodo 'program' rappresenta la radice dell'intero programma.
@@ -79,7 +79,7 @@ void program_gen(AST ast, SymbolTable *sym) {
 
     /* Genera il codice per i figli */
     seq_gen(ast, sym);
-    
+
     Entry *e=symtab_lookup(sym, sc_make_id("main"));
     assert(e!=NULL);
 
@@ -202,19 +202,19 @@ void def_check(AST ast, SymbolTable *sym) {
         error(ast->line, "La variabile '%s' non può essere void", ast->id);
 
     /* Allocazione della variabile: segna nel campo address
-     * l'indirizzo relativo a FP. 
+     * l'indirizzo relativo a FP.
      */
     e->address= -1 - symtab_get_locals_counter(sym);
     symtab_increment_locals_counter(sym, 1);
 
     /* Controlla se l'inizializzazione è coerente con il tipo
      * della variabile
-     */ 
+     */
     if (ast->child[0]!=NULL) {
         ast->child[0]=ensure_expr_type(ast->child[0], e->value_type);
     }
 }
-    
+
 
 void def_gen(AST ast, SymbolTable *sym) {
     if (ast->child[0]!=NULL) {
@@ -230,7 +230,7 @@ void assignment_check(AST ast, SymbolTable *sym) {
     if (e==NULL)
         error(ast->line, "Variabile non definita: '%s'", ast->id);
     if (e->entry_type!=ET_VAR)
-        error(ast->line, "Assegnazione a '%s' che non è una variabile", 
+        error(ast->line, "Assegnazione a '%s' che non è una variabile",
                 ast->id);
     ast_check(ast->child[0], sym);
     ast->child[0]=ensure_expr_type(ast->child[0], e->value_type);
@@ -269,9 +269,9 @@ void if_gen(AST ast, SymbolTable *sym) {
         code_put16(0);
         /* Sistema il primo salto per arrivare qui */
         code_put16_at(code_address(), jump_end_addr);
-        /* Sistema le cose in modo che il secondo 
+        /* Sistema le cose in modo che il secondo
          * salto vada alla fine dell'if */
-        jump_end_addr=temp_addr; 
+        jump_end_addr=temp_addr;
         /* Genera il ramo "else" */
         ast_gen(ast->child[2], sym);
     }
@@ -295,7 +295,12 @@ void while_gen(AST ast, SymbolTable *sym) {
      * un salto all'inizio verso il punto in cui sarà compilata
      * la condizione.
      */
-    
+
+    // Assegnazione di inizializzazione
+    ast_gen(ast->child[0], sym);
+    gen_address(sym, ast->id);
+    code_put(OP_STORE);
+
     /* Genera un salto verso il punto in cui sarà generata la condizione */
     code_put(OP_JUMP);
     int jump_cond_addr=code_address();
@@ -305,12 +310,93 @@ void while_gen(AST ast, SymbolTable *sym) {
     int body_start=code_address();
     /* Genera il corpo del ciclo */
     ast_gen(ast->child[1], sym);
-    
+
     /* Sistema il salto alla condizione per arrivare qui */
     code_put16_at(code_address(), jump_cond_addr);
 
     /* Genera la condizione */
     ast_gen(ast->child[0], sym);
+
+    /* Genera un salto all'inizio del corpo se la cond. è vera */
+    code_put(OP_JUMPNZ);
+    code_put16(body_start);
+}
+
+void do_while_check(AST ast, SymbolTable *sym) {
+    seq_check(ast, sym);
+    ast->child[0]=ensure_expr_type(ast->child[0], TYPE_INT);
+}
+
+void do_while_gen(AST ast, SymbolTable *sym) {
+    /* Il codice generato sarà composto dal blocco,
+     * seguito dal salto condizionato.
+     */
+
+    int body_start=code_address();
+    ast_gen(ast->child[1], sym);
+
+    ast_gen(ast->child[0], sym);
+
+    code_put(OP_JUMPNZ);
+    code_put16(body_start);
+}
+
+void for_check(AST ast, SymbolTable *sym) {
+    seq_check(ast, sym);
+    Entry* iter_var = symtab_lookup(sym, ast->id);
+    if (iter_var->value_type != TYPE_INT) {
+    	error(ast->line, "Variabile iterativa %s non è di tipo intero.", ast->id);
+    }
+    ast->child[0]=ensure_expr_type(ast->child[0], TYPE_INT); // init
+    ast->child[1]=ensure_expr_type(ast->child[1], TYPE_INT); // cond
+}
+
+void for_gen(AST ast, SymbolTable *sym) {
+	/* Simile al while, genera dapprima l'espressione di inizializzazione,
+	 * poi il blocco (preceduto da un salto alla condizione), poi l'espressione di incremento
+	 * e infine la condizione.
+	 */
+
+	// Generiamo il codice per l'espressione "init" e ne salviamo il risultato nella variabile iterativa.
+	ast_gen(ast->child[0], sym); // init
+	gen_address(sym, ast->id);
+	code_put(OP_STORE);
+
+    code_put(OP_JUMP);
+    int jump_cond_addr=code_address();
+    code_put16(0);
+
+    /* Salva l'indirizzo di inizio del corpo */
+    int body_start=code_address();
+    /* Genera il corpo del ciclo */
+    ast_gen(ast->child[2], sym);
+
+    // Incrementa il valore della variabile iterativa
+    gen_address(sym, ast->id);
+    code_put(OP_LOAD);
+
+    code_put(OP_PUSH32);
+    code_put32(1); // incremento di 1
+
+    code_put(OP_ADD); // Somma tra il valore precedente e la costante 1.
+
+    gen_address(sym, ast->id);
+    code_put(OP_STORE); // Salvataggio del nuovo valore incrementato.
+
+    /* Sistema il salto alla condizione per arrivare qui */
+    code_put16_at(code_address(), jump_cond_addr);
+
+    // Generazione del limite superiore.
+    ast_gen(ast->child[1], sym);
+    // Ricarica la variabile per il controllo.
+    gen_address(sym, ast->id);
+    code_put(OP_LOAD);
+
+    code_put(OP_LT); // Implementiamo il controllo <= come !(b < a), per cui l'ordine è invertito.
+
+    code_put(OP_PUSH8);
+    code_put(0);
+    code_put(OP_EQ);
 
     /* Genera un salto all'inizio del corpo se la cond. è vera */
     code_put(OP_JUMPNZ);
@@ -369,7 +455,7 @@ void read_check(AST ast, SymbolTable *sym) {
     if (e==NULL)
         error(ast->line, "Variabile non definita: '%s'", ast->id);
     if (e->entry_type!=ET_VAR)
-        error(ast->line, "Read di '%s' che non è una variabile", 
+        error(ast->line, "Read di '%s' che non è una variabile",
                 ast->id);
 }
 
@@ -447,7 +533,7 @@ void or_gen(AST ast, SymbolTable *sym) {
     int jump_end_addr=code_address();
     code_put(0);
 
-    /* Rimuove dallo stack il risultato del primo operando 
+    /* Rimuove dallo stack il risultato del primo operando
      * e valuta il secondo.
      */
     code_put(OP_DROP);
@@ -475,7 +561,7 @@ void and_gen(AST ast, SymbolTable *sym) {
     int jump_end_addr=code_address();
     code_put(0);
 
-    /* Rimuove dallo stack il risultato del primo operando 
+    /* Rimuove dallo stack il risultato del primo operando
      * e valuta il secondo.
      */
     code_put(OP_DROP);
@@ -657,7 +743,7 @@ void func_call_check(AST ast, SymbolTable *sym) {
     if (et!=ET_FUNCTION)
         error(ast->line, "'%s' non è una funzione", ast->id);
     ast->value_type=e->value_type;
-    
+
     /* Prepara il controllo dei parametri attuali */
     assert(e->sym!=NULL);
     Entry *first_formal=symtab_get_first_formal(e->sym);
@@ -722,7 +808,7 @@ void int2real_gen(AST ast, SymbolTable *sym) {
 /* Controlla che il tipo di un'espressione sia quello desiderato;
  * se l'espressione è int e il tipo desiderato è real, inserisce
  * un nodo int2real per fare la conversione.
- * Il valore di ritorno deve essere usato al posto dell'AST 
+ * Il valore di ritorno deve essere usato al posto dell'AST
  * dell'espressione originaria.
  */
 static AST ensure_expr_type(AST expr, ValueType type) {
@@ -734,10 +820,10 @@ static AST ensure_expr_type(AST expr, ValueType type) {
         return e;
     }
     if (expr->value_type == TYPE_REAL && type==TYPE_INT)
-        error(expr->line, 
+        error(expr->line,
                 "Espressione real dove era attesa un'espressione int");
     if (expr->value_type == TYPE_VOID)
-        error(expr->line, 
+        error(expr->line,
                 "Espressione void dove era atteso un valore");
     error(expr->line, "Tipo dell'espressione non valido");
     return expr;
@@ -745,7 +831,7 @@ static AST ensure_expr_type(AST expr, ValueType type) {
 
 /*
  * Controlla gli operandi di un'espressione, assicurandosi che siano
- * tutti dello stesso tipo. Se allow_real è true, il tipo 
+ * tutti dello stesso tipo. Se allow_real è true, il tipo
  * può essere int o real, altrimenti deve essere necessariamente int.
  */
 static void check_operands(AST expr, SymbolTable *sym, bool allow_real) {

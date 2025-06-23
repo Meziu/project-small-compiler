@@ -1,0 +1,6 @@
+void main() {
+   int num!
+	do {
+    	read "Inserisci un numero da 1 a 10: ", num!
+	} while num<1 or num>10!
+}

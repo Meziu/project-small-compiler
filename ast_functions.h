@@ -44,6 +44,12 @@ void if_gen(AST ast, SymbolTable *sym);
 void while_check(AST ast, SymbolTable *sym);
 void while_gen(AST ast, SymbolTable *sym);
 
+void do_while_check(AST ast, SymbolTable *sym);
+void do_while_gen(AST ast, SymbolTable *sym);
+
+void for_check(AST ast, SymbolTable *sym);
+void for_gen(AST ast, SymbolTable *sym);
+
 void write_check(AST ast, SymbolTable *sym);
 void write_gen(AST ast, SymbolTable *sym);
 

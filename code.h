@@ -8,7 +8,7 @@
 
 /* Codici operativi delle istruzioni */
 enum {
-    OP_HALT, 
+    OP_HALT,
     OP_JUMP,
     OP_JUMPZ,
     OP_JUMPNZ,
@@ -79,7 +79,7 @@ void code_put(unsigned char b);
 void code_put_at(unsigned char b, unsigned short addr);
 
 /*-----------------------------------------------------------------
- * Inserisce un valore a 16 bit nella code memory, 
+ * Inserisce un valore a 16 bit nella code memory,
  * incrementando di 2 l'indirizzo della prossima istruzione.
  *
  * PARAMETRI DI INGRESSO
@@ -88,7 +88,7 @@ void code_put_at(unsigned char b, unsigned short addr);
 void code_put16(short w);
 
 /*-----------------------------------------------------------------
- * Inserisce un valore a 16 bit nella code memory, 
+ * Inserisce un valore a 16 bit nella code memory,
  * a un indirizzo specificato
  * PARAMETRI DI INGRESSO
  *    w   Il valore a 16 bit da inserire
@@ -97,7 +97,7 @@ void code_put16(short w);
 void code_put16_at(short w, unsigned short addr);
 
 /*-----------------------------------------------------------------
- * Inserisce un valore a 32 bit nella code memory, 
+ * Inserisce un valore a 32 bit nella code memory,
  * incrementando di 4 l'indirizzo della prossima istruzione.
  *
  * PARAMETRI DI INGRESSO
@@ -106,7 +106,7 @@ void code_put16_at(short w, unsigned short addr);
 void code_put32(int w);
 
 /*-----------------------------------------------------------------
- * Inserisce un valore a 32 bit nella code memory, 
+ * Inserisce un valore a 32 bit nella code memory,
  * a un indirizzo specificato
  * PARAMETRI DI INGRESSO
  *    w   Il valore a 32 bit da inserire
@@ -115,7 +115,7 @@ void code_put32(int w);
 void code_put32_at(int w, unsigned short addr);
 
 /*-----------------------------------------------------------------
- * Inserisce un valore float a 32 bit nella code memory, 
+ * Inserisce un valore float a 32 bit nella code memory,
  * incrementando di 4 l'indirizzo della prossima istruzione.
  *
  * PARAMETRI DI INGRESSO
@@ -124,7 +124,7 @@ void code_put32_at(int w, unsigned short addr);
 void code_putfloat(float w);
 
 /*-----------------------------------------------------------------
- * Inserisce un valore float a 32 bit nella code memory, 
+ * Inserisce un valore float a 32 bit nella code memory,
  * a un indirizzo specificato
  * PARAMETRI DI INGRESSO
  *    w   Il valore a 32 bit da inserire

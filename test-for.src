@@ -1,0 +1,7 @@
+void main() {
+	int i!
+    // Stampa la tabellina del 7
+	for i in 1:10 {
+    	write "7 per ", i, " uguale ", 7*i!
+	}
+}

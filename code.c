@@ -11,7 +11,7 @@
 
 static unsigned char code_memory[MAX_CODE];
 static int data_memory[MAX_DATA];
-static float *data_memory_as_float=(float *)data_memory; 
+static float *data_memory_as_float=(float *)data_memory;
 
 static int pc, sp, fp;
 static int code_limit=0;
@@ -142,7 +142,7 @@ static inline void execute(int op_code) {
     assert(sizeof(int)==sizeof(float));
     switch (op_code) {
     case OP_HALT:
-        break; 
+        break;
     case OP_JUMP:
         pc=fetch_u16();
         break;
@@ -238,6 +238,7 @@ static inline void execute(int op_code) {
     case OP_INT2REAL:
         a=data_memory[++sp];
         data_memory_as_float[sp--]=(float)a;
+        break;
     case OP_EQ:
         b=data_memory[++sp];
         a=data_memory[++sp];

@@ -16,6 +16,9 @@ static TokenDefinition keywords[]={
     {"if", TOK_IF},
     {"else", TOK_ELSE},
     {"while", TOK_WHILE},
+    {"do", TOK_DO},
+    {"for", TOK_FOR},
+    {"in", TOK_IN},
     {"return", TOK_RETURN},
     {"write", TOK_WRITE},
     {"read", TOK_READ},
@@ -38,12 +41,12 @@ static TokenDefinition op2[]={
 /* Delimitatori di inizio e fine commento */
 #define CBEGIN "//"
 #define CEND "\n"
-        
+
 
 int main(int argc, char** argv) {
     sc_init(keywords, NUM_KEYWORDS,  /* Keywords */
             op2, NUM_OP2,     /* Operatori di due caratteri */
-            "+-*/(),!{}=<>",       /* Operatori di un carattere */
+            "+-*/(),!{}=<>:",       /* Operatori di un carattere */
             CBEGIN,
             CEND);
     if (argc!=2) {
@@ -63,4 +66,3 @@ int main(int argc, char** argv) {
     code_run();
     return (EXIT_SUCCESS);
 }
-
