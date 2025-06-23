@@ -1,0 +1,77 @@
+<program> ::= <func_def> (<func_def>)* EOF
+
+<func_def> ::= <type> ID "(" <formals> ")" <body>
+
+<type> ::= INT | REAL | VOID
+
+<formals> ::= 
+        | <formal> ("," <formal>)*
+
+<formal> ::= <type> ID
+
+<body> ::= "{" (<def>)* (<statement>)* "}"
+
+<def> ::= <type> ID ("=" <expr>)? "!"
+
+<statement> ::=  <assignment>
+               | <if>
+               | <while>
+               | <write>
+               | <read>
+               | <return>
+               | <call>
+
+<assignment> ::= ID "=" <expr> "!"
+
+<if> ::=   IF <expr> <block> (<else>)?
+
+<else> ::= ELSE <block>
+          | ELSE <if>
+
+<while> ::= WHILE <expr> <block>
+
+<block> ::= '{' (statement)* '}'
+
+<write> ::= WRITE <write_item> ("," <write_item)* "!"
+<write_item> ::= <expr>
+               | STR
+
+<read> ::= READ (STR ",")? ID "!"
+
+<return> ::= RETURN (<expr)? "!"
+
+<call> ::= CALL <func_call> "!"
+
+<expr> ::= <and_expr> (OR <and_expr>)*
+
+<and_expr> ::= <not_expr> (AND <not_expr)*
+
+<not_expr> ::= <rel_expr> | NOT <not_expr>
+
+<rel_expr> ::= <add_expr> (("=="|"!="|"<"|">"|"<="|">=") <add_expr>)?
+
+<add_expr> ::= <mul_expr> (("+"|"-") <mul_expr>)*
+
+<mul_expr> ::= <factor> (("*"|"/") <factor>)*
+
+<factor> ::= NUM
+           | NUMF
+           | "-" <factor>
+           | ID
+           | ID "(" <actuals> ")"
+           | "(" <expr> ")"
+
+
+<func_call> ::= ID "(" <actuals> ")"
+
+<actuals> ::=
+        | <actual> ("," <actual>)*
+
+
+<actual> ::= <expr>
+           
+         
+
+
+
+

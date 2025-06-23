@@ -1,0 +1,43 @@
+// Questo programma chiede all'utente di scegliere
+// un numero da 1 a 100, e poi prova a indovinarlo
+// applicando la ricerca binaria.
+
+int chiedi(int num) {
+    int risposta=-1!
+    write "Credo che il numero sia: ", num!
+    while risposta<0 or risposta>2 {
+      write "Scrivi 0 se ho indovinato,"!
+      write "   1 se il mio numero è troppo piccolo,"!
+      read "   2 se il mio numero è troppo grande: ", risposta!
+    }
+    return risposta!
+}
+
+void indovina(int min, int max) {
+    int m=(min+max)/2!
+    int risposta!
+    if min>max {
+       write "I conti non tornano..."!
+       write "Credo che tu abbia imbrogliato!"!
+       return!
+    }
+    risposta=chiedi(m)!
+    if risposta==0 {
+       write "Ho indovinato! EVVIVA!!!" !
+    }  else if risposta==1 {
+       write "Il numero deve essere maggiore di ", m, "..."!
+       call indovina(m+1, max)!
+    }  else {
+       write "Il numero deve essere minore di ", m, "..."!
+       call indovina(min, m-1)!
+    }
+}
+
+void main() {
+    int pronto!
+    write "Pensa un numero da 1 a 100"!
+    write "e io proverò a indovinarlo."!
+    read "Scrivi 1<invio> quando sei pronto: ", pronto!
+    call indovina(1, 100)!
+} 
+   

@@ -1,0 +1,24 @@
+real abs(real x) {
+  if x<0.0 {
+    return -x!
+  } else {
+    return x!
+  }
+}
+
+real radice_quadrata(real y) {
+   real x=1.0!
+   real x1=(x+y/x)/2.0!
+   while abs(x-x1)>1e-6 {
+      x=x1!
+      x1=(x+y/x)/2.0!
+   }
+   return x1!
+}
+
+void main() {
+   real num!
+   read "Inserisci un num. reale positivo: ", num!
+   write "La radice di ",num, 
+         " è: ", radice_quadrata(num)!
+}
