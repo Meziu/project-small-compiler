@@ -1,7 +1,11 @@
 const real pi=3.14159!
+
 void main() {
-        real raggio!
+		real raggio!
+
+		//const int interna = 10! // NON VALIDO DEFINIRE COSTANTI NELLE FUNZIONI
+		//pi = 5.0! // NON VALIDO CAMBIARE IL VALORE DELLE COSTANTI
+
         read "Inserisci il raggio: ", raggio!
         write "Area=", pi*raggio*raggio!
-        write "Pi greco è=", pi!
 }

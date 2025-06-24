@@ -221,7 +221,12 @@ void const_check(AST ast, SymbolTable *sym) {
 void const_gen(AST ast, SymbolTable *sym) {
     if (ast->child[0]!=NULL) {
         ast_gen(ast->child[0], sym);
-        gen_address(sym, ast->id);
+
+        // L'indirizzo della costante è globale, per cui non usiamo l'istruzione ADDR
+        code_put(OP_PUSH32);
+        Entry *e=symtab_lookup(sym, ast->id);
+        code_put32(e->address);
+
         code_put(OP_STORE);
     }
 }
@@ -754,7 +759,7 @@ void realnum_gen(AST ast, SymbolTable *sym) {
 }
 
 /* Un nodo 'id' rappresenta un identificatore usato come
- * riferimento a una variabile o un parametro formale.
+ * riferimento a una variabile, un parametro formale o una costante.
  */
 void id_check(AST ast, SymbolTable *sym) {
     Entry *e=symtab_lookup(sym, ast->id);
@@ -767,7 +772,17 @@ void id_check(AST ast, SymbolTable *sym) {
 }
 
 void id_gen(AST ast, SymbolTable *sym) {
-    gen_address(sym, ast->id);
+	Entry *e=symtab_lookup(sym, ast->id);
+
+	// Se si tratta di una costante bisogna caricare il valore dall'indirizzo "globale",
+	// e non relativamente ad FP
+	if (e->entry_type == ET_CONST) {
+		code_put(OP_PUSH32);
+		code_put32(e->address);
+	} else {
+		gen_address(sym, ast->id);
+	}
+
     code_put(OP_LOAD);
 }
 
