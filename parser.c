@@ -10,6 +10,7 @@
  * PROTOTIPI DELLE FUNZIONI STATIC DEL MODULO
  -------------------------------------------------------*/
 
+static AST parse_const(void);
 static AST parse_func_def(void);
 static AST parse_type(void);
 static AST parse_formals(void);
@@ -44,6 +45,14 @@ static AST parse_actual(void);
  * IMPLEMENTAZIONE DELLE FUNZIONI PUBBLICHE DEL MODULO
  -------------------------------------------------------*/
 AST parse_program(void) {
+	// Le costanti simboliche, come le variabili nelle funzioni, possono essere
+	// definite solo all'inizio del programma prima delle funzioni.
+	AST constants = NULL;
+	while (sc_current() == TOK_CONST) {
+		AST c = parse_const();
+		constants = make_ast2(seq_check, seq_gen, sc_current_line(), constants, c);
+	}
+
     AST defs=parse_func_def();
     while (sc_current() != TOK_EOF) {
         AST fd=parse_func_def();
@@ -51,8 +60,8 @@ AST parse_program(void) {
                            defs, fd);
     }
     sc_match(TOK_EOF);
-    AST program=make_ast1(program_check, program_gen, sc_current_line(),
-            defs);
+    AST program=make_ast2(program_check, program_gen, sc_current_line(),
+            constants, defs);
     return program;
 }
 
@@ -60,6 +69,23 @@ AST parse_program(void) {
 /*--------------------------------------------------------
  * IMPLEMENTAZIONE DELLE FUNZIONI STATIC DEL MODULO
  -------------------------------------------------------*/
+
+static AST parse_const(void) {
+	sc_match(TOK_CONST);
+
+	AST type=parse_type();
+
+    char *id=sc_current_id();
+    int line=sc_current_line();
+    sc_match(TOK_ID);
+    sc_match('=');
+    AST expr=parse_expr();
+    sc_match('!');
+    AST st=make_ast1(const_check, const_gen, line, expr);
+    st->id=id;
+    st->value_type=type->value_type;
+    return st;
+}
 
 static AST parse_func_def(void) {
     AST type=parse_type();

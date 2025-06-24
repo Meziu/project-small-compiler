@@ -1,0 +1,7 @@
+const real pi=3.14159!
+void main() {
+        real raggio!
+        read "Inserisci il raggio: ", raggio!
+        write "Area=", pi*raggio*raggio!
+        write "Pi greco è=", pi!
+}

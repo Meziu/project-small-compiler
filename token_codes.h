@@ -6,6 +6,7 @@ enum {
     TOK_INT=1024,
     TOK_REAL,
     TOK_VOID,
+    TOK_CONST,
     TOK_IF,
     TOK_ELSE,
     TOK_WHILE,

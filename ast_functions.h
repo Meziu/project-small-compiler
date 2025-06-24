@@ -32,6 +32,9 @@ void formal_gen(AST ast, SymbolTable *sym);
 void body_check(AST ast, SymbolTable *sym);
 void body_gen(AST ast, SymbolTable *sym);
 
+void const_check(AST ast, SymbolTable *sym);
+void const_gen(AST ast, SymbolTable *sym);
+
 void def_check(AST ast, SymbolTable *sym);
 void def_gen(AST ast, SymbolTable *sym);
 

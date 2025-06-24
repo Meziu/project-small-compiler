@@ -7,6 +7,7 @@
 #include "scanner.h"
 #include "error.h"
 #include "code.h"
+#include "symtab.h"
 
 /*--------------------------------------------------------
  * PROTOTIPI DELLE FUNZIONI STATIC DEL MODULO
@@ -71,14 +72,17 @@ void program_check(AST ast, SymbolTable *sym) {
 }
 
 void program_gen(AST ast, SymbolTable *sym) {
+	/* Genera il codice per le costanti */
+    seq_gen(ast->child[0], sym);
+
     /* Compila una call per il main */
     code_put(OP_CALL);
     int call_addr=code_address();
     code_put16(0); /* Qui verrà messo l'indirizzo del main */
     code_put(OP_HALT);
 
-    /* Genera il codice per i figli */
-    seq_gen(ast, sym);
+    /* Genera il codice per le funzioni */
+    ast_gen(ast->child[1], sym);
 
     Entry *e=symtab_lookup(sym, sc_make_id("main"));
     assert(e!=NULL);
@@ -187,6 +191,38 @@ void body_gen(AST ast, SymbolTable *sym) {
         code_put(0);
         code_put(OP_RET1);
         code_put(num_formals);
+    }
+}
+
+/* Un nodo 'def' rappresenta una definizione di variabile locale */
+void const_check(AST ast, SymbolTable *sym) {
+    if (ast->child[0]!=NULL) {
+        /* Controlla l'espressione di inizializzazione */
+        ast_check(ast->child[0], sym);
+    }
+    Entry *e=symtab_define(sym, ast->id, ET_CONST, ast->line);
+    e->value_type=ast->value_type;
+    if (e->value_type==TYPE_VOID)
+        error(ast->line, "La costante '%s' non può essere void", ast->id);
+
+    /* Allocazione della costante */
+    e->address = symtab_get_const_counter(sym); // dall'indirizzo 0
+    symtab_increment_const_counter(sym, 1);
+
+    /* Controlla se l'inizializzazione è coerente con il tipo
+     * della costante
+     */
+    if (ast->child[0]!=NULL) {
+        ast->child[0]=ensure_expr_type(ast->child[0], e->value_type);
+    }
+}
+
+
+void const_gen(AST ast, SymbolTable *sym) {
+    if (ast->child[0]!=NULL) {
+        ast_gen(ast->child[0], sym);
+        gen_address(sym, ast->id);
+        code_put(OP_STORE);
     }
 }
 
@@ -461,6 +497,7 @@ void read_check(AST ast, SymbolTable *sym) {
 
 void read_gen(AST ast, SymbolTable *sym) {
     Entry *e=symtab_lookup(sym, ast->id);
+
     if (e->value_type==TYPE_INT)
         code_put(OP_READ);
     else
@@ -724,8 +761,8 @@ void id_check(AST ast, SymbolTable *sym) {
     if (e==NULL)
         error(ast->line, "Identificatore sconosciuto: '%s'", ast->id);
     EntryType et=e->entry_type;
-    if (et!=ET_VAR && et!=ET_FORMAL)
-        error(ast->line, "'%s' non è una variabile o un parametro", ast->id);
+    if (et!=ET_VAR && et!=ET_FORMAL && et!=ET_CONST)
+        error(ast->line, "'%s' non è una costante, una variabile o un parametro", ast->id);
     ast->value_type=e->value_type;
 }
 
@@ -856,7 +893,7 @@ static void check_operands(AST expr, SymbolTable *sym, bool allow_real) {
 static void gen_address(SymbolTable *sym, char *id) {
     Entry *e=symtab_lookup(sym, id);
     assert(e!=NULL);
-    assert(e->entry_type==ET_VAR || e->entry_type==ET_FORMAL);
+    assert(e->entry_type==ET_VAR || e->entry_type==ET_FORMAL || e->entry_type==ET_CONST);
     code_put(OP_ADDR);
     code_put16(e->address);
 }

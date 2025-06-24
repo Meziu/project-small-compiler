@@ -1,21 +1,21 @@
 /*
  * Questo modulo gestisce le funzioni per la gestione delle
  * tabelle dei simboli, che associano identificatori a definizioni.
- * 
+ *
  * Per supportare gli scope annidati per la definizione
  * delle variabili, una tabella dei simboli può avere
- * una tabella "madre"; l'operazione di ricerca di una 
+ * una tabella "madre"; l'operazione di ricerca di una
  * definizione viene propagata alla tabella
  * madre.
- * 
+ *
  * Per facilitare l'analisi semantica e la compilazione,
- * una tabella dei simboli mantiene anche una "funzione corrente" 
+ * una tabella dei simboli mantiene anche una "funzione corrente"
  * (la funzione in corso di compilazione).
- * 
+ *
  * NOTA: L'implementazione si basa sul fatto che tutti gli
  * identificatori siano inseriti in una tabella dallo scanner,
  * che assicura che lo stesso identificatore è associato a un
- * unico indirizzo anche se appare più volte nel sorgente del 
+ * unico indirizzo anche se appare più volte nel sorgente del
  * programma (vedi scanner.h); quindi è possibile confrontare
  * due identificatori usando == invece di strcmp.
  */
@@ -33,7 +33,8 @@ typedef struct SymbolTable SymbolTable;
 typedef enum {
     ET_FUNCTION,
     ET_FORMAL,    /* Parametro formale di una funzione */
-    ET_VAR        /* Variabile  */
+    ET_VAR,       /* Variabile  */
+    ET_CONST,
 } EntryType;
 
 /* Il tipo Entry rappresenta le informazioni contenute in una
@@ -49,12 +50,12 @@ struct Entry {
                          * formale è l'ultimo. Questo campo è inizializzato
                          * automaticamente da symtab_define()
                          */
-    
-    /* Le seguenti informazioni sono riempite durante l'analisi semantica 
+
+    /* Le seguenti informazioni sono riempite durante l'analisi semantica
      * o la generazione del codice */
     ValueType value_type;  /* Tipo di dato dell'oggetto dichiarato */
 
-    int address; /* Indirizzo dell'entità definita 
+    int address; /* Indirizzo dell'entità definita
                   * Per le variabili e i parametri è un offset
                   * relativi al Frame Pointer; mentre per le funzioni
                   * è un indirizzo nella Code Memory.
@@ -62,8 +63,8 @@ struct Entry {
 
     SymbolTable *sym; /* Per le funzioni, tabella dei simboli locale */
 
-                 
-    
+
+
     /* Questo campo è usato internamente per mantenere la struttura dati */
     Entry *link;
 };
@@ -84,11 +85,11 @@ SymbolTable *make_symtab(SymbolTable *parent);
  * Viene segnalato un errore se si tenta di fornire una
  * definizione per un identificatore che è già usato da
  * un'altra definizione nella stessa symbol table.
- * 
+ *
  * Parametri di ingresso/uscita
  *   sym        La symbol table
  * Parametri di ingresso
- *   id         L'identificatore della definizione. 
+ *   id         L'identificatore della definizione.
  *   type       Tipo di definizione (vedi le costanti ET_* sopra)
  *   line       Numero di linea nel sorgente della definizione; usato
  *              per i messaggi di errore.
@@ -105,20 +106,20 @@ SymbolTable *make_symtab(SymbolTable *parent);
  * NOTA:
  *   Le Entry corrispondenti ai parametri formali (ET_FORMAL)
  *   DEVONO essere create in ordine di definizione, per la
- *   corretta impostazione dei campi next_formal e per il 
+ *   corretta impostazione dei campi next_formal e per il
  *   funzionamento di symtab_get_first_formal.
  ----------------------------------------------------------*/
 Entry *symtab_define(SymbolTable *sym, char *id, EntryType type, int line);
 
 /*----------------------------------------------------------
  * Cerca una definizione in una symbol table.
- * Se la definizione non è presente nella symbol table 
+ * Se la definizione non è presente nella symbol table
  * corrente, viene cercata nella tabella madre, nella
  * madre della madre e così via.
- * 
+ *
  * Parametri di ingresso
  *   sym        La symbol table
- *   id         L'identificatore della definizione da cercare. 
+ *   id         L'identificatore della definizione da cercare.
  * Valore di ritorno
  *   L'Entry corrispondente alla definizione trovata, oppure
  *   NULL se non è presente una definizione per quell'identificatore.
@@ -157,7 +158,7 @@ void symtab_set_function_definition(SymbolTable *sym, Entry *func);
 
 
 /*-----------------------------------------------------------
- * Restituisce il contatore del numero di variabil locali 
+ * Restituisce il contatore del numero di variabil locali
  * associato a una symbol table.
  *
  * Parametri di ingresso
@@ -168,7 +169,7 @@ void symtab_set_function_definition(SymbolTable *sym, Entry *func);
 int symtab_get_locals_counter(SymbolTable *sym);
 
 /*-----------------------------------------------------------
- * Incrementa il contatore del numero di variabil locali 
+ * Incrementa il contatore del numero di variabil locali
  * associato a una symbol table.
  *
  * Parametri di ingresso
@@ -176,6 +177,27 @@ int symtab_get_locals_counter(SymbolTable *sym);
  *   inc        L'incremento da applicare al contatore.
  ----------------------------------------------------------*/
 void symtab_increment_locals_counter(SymbolTable *sym, int inc);
+
+/*-----------------------------------------------------------
+ * Restituisce il contatore del numero di costanti simboliche
+ * associato a una symbol table.
+ *
+ * Parametri di ingresso
+ *   sym        La symbol table
+ * Valore di ritorno
+ *   Il valore del contatore di costanti simboliche.
+ ----------------------------------------------------------*/
+int symtab_get_const_counter(SymbolTable *sym);
+
+/*-----------------------------------------------------------
+ * Incrementa il contatore del numero di costanti simboliche
+ * associato a una symbol table.
+ *
+ * Parametri di ingresso
+ *   sym        La symbol table
+ *   inc        L'incremento da applicare al contatore.
+ ----------------------------------------------------------*/
+void symtab_increment_const_counter(SymbolTable *sym, int inc);
 
 /*-----------------------------------------------------------
  * Restituisce il contatore del numero di parametri formali
@@ -189,7 +211,7 @@ void symtab_increment_locals_counter(SymbolTable *sym, int inc);
 int symtab_get_formals_counter(SymbolTable *sym);
 
 /*-----------------------------------------------------------
- * Incrementa il contatore del numero di parametri formali 
+ * Incrementa il contatore del numero di parametri formali
  * associato a una symbol table.
  *
  * Parametri di ingresso
@@ -201,7 +223,7 @@ void symtab_increment_formals_counter(SymbolTable *sym, int inc);
 
 /*----------------------------------------------------------
  * Se la tabella è la tabella locale di una funzione,
- * restituisce l'entry corrispondente al primo parametro 
+ * restituisce l'entry corrispondente al primo parametro
  * formale della funzione.
  *
  * Parametri di ingresso
@@ -220,7 +242,7 @@ Entry *symtab_get_first_formal(SymbolTable *sym);
 /*-----------------------------------------------------------
  * Associa a una tabella una "work Entry", ovvero una Entry
  * su cui il codice che usa la tabella deve lavorare. Questo
- * meccanismo è usato durante l'analisi semantica per tenere 
+ * meccanismo è usato durante l'analisi semantica per tenere
  * traccia di qual è il parametro formale corrispondente al
  * prossimo parametro attuale.
  *
@@ -235,7 +257,7 @@ void symtab_set_work_entry(SymbolTable *sym, Entry *entry);
 /*-----------------------------------------------------------
  * Restituisce la "work Entry" della tabella, ovvero l'Entry
  * su cui il codice che usa la tabella deve lavorare. Questo
- * meccanismo è usato durante l'analisi semantica per tenere 
+ * meccanismo è usato durante l'analisi semantica per tenere
  * traccia di qual è il parametro formale corrispondente al
  * prossimo parametro attuale.
  *
@@ -248,4 +270,3 @@ void symtab_set_work_entry(SymbolTable *sym, Entry *entry);
 Entry *symtab_get_work_entry(SymbolTable *sym);
 
 #endif /* SYMTAB_H */
-

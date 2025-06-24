@@ -13,6 +13,7 @@ struct SymbolTable {
     SymbolTable *parent;
     Entry *bucket[BUCKETS];
     Entry *function;
+    int num_constants;
     int num_formals;
     int num_locals;
     Entry *first_formal;
@@ -109,6 +110,16 @@ void symtab_increment_locals_counter(SymbolTable *sym, int inc) {
     sym->num_locals+=inc;
 }
 
+int symtab_get_const_counter(SymbolTable *sym) {
+    assert(sym!=NULL);
+    return sym->num_constants;
+}
+
+void symtab_increment_const_counter(SymbolTable *sym, int inc) {
+    assert(sym!=NULL);
+    sym->num_constants+=inc;
+}
+
 int symtab_get_formals_counter(SymbolTable *sym) {
     assert(sym!=NULL);
     return sym->num_formals;
@@ -158,7 +169,6 @@ static Entry *make_entry(char *id, EntryType type, int line) {
     e->value_type=TYPE_UNKNOWN;
     e->sym=NULL;
     e->link=NULL;
-    
+
     return e;
 }
-
