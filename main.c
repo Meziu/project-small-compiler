@@ -14,6 +14,7 @@ static TokenDefinition keywords[]={
     {"real", TOK_REAL},
     {"void", TOK_VOID},
     {"const", TOK_CONST},
+    {"prototype", TOK_PROTOTYPE},
     {"if", TOK_IF},
     {"else", TOK_ELSE},
     {"while", TOK_WHILE},

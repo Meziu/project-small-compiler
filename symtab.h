@@ -24,6 +24,7 @@
 #ifndef SYMTAB_H
 #define SYMTAB_H
 
+#include <stdbool.h>
 #include "type.h"
 
 struct SymbolTable;
@@ -36,6 +37,14 @@ typedef enum {
     ET_VAR,       /* Variabile  */
     ET_CONST,
 } EntryType;
+
+// Lista di indirizzi (code memory) in cui si chiama una funzione non generata
+struct AddressNode {
+	short addr;
+	struct AddressNode* next;
+};
+typedef struct AddressNode AddressNode;
+typedef AddressNode* AddressList;
 
 /* Il tipo Entry rappresenta le informazioni contenute in una
  * symbol table su una dichiarazione.
@@ -60,6 +69,10 @@ struct Entry {
                   * relativi al Frame Pointer; mentre per le funzioni
                   * è un indirizzo nella Code Memory.
                   */
+
+    bool func_defined; // Per le funzioni, se è già stato specificato un corpo della funzione o meno
+    bool func_generated; // Per le funzioni, se è già stato generato il codice della funzione o meno
+    AddressList incomplete_addresses; // Per le funzioni, gli indirizzi (code memory) in cui inserire l'indirizzo del codice della funzione
 
     SymbolTable *sym; /* Per le funzioni, tabella dei simboli locale */
 
@@ -268,5 +281,13 @@ void symtab_set_work_entry(SymbolTable *sym, Entry *entry);
  *   La work Entry corrente.
  *--------------------------------------------------------*/
 Entry *symtab_get_work_entry(SymbolTable *sym);
+
+// Creazione/distruzione di una address list
+AddressList make_address_list();
+AddressList destroy_address_list(AddressList list);
+// Aggiunta di una locazione nella address_list
+AddressList address_list_append(AddressList list, short addr);
+// Risoluzione di tutti gli indirizzi nella address list
+void resolve_address_list(AddressList list, short actual_address);
 
 #endif /* SYMTAB_H */

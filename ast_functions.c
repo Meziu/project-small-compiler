@@ -73,7 +73,9 @@ void program_check(AST ast, SymbolTable *sym) {
 
 void program_gen(AST ast, SymbolTable *sym) {
 	/* Genera il codice per le costanti */
-    seq_gen(ast->child[0], sym);
+	if (ast->child[0] != NULL) {
+    	ast_gen(ast->child[0], sym);
+	}
 
     /* Compila una call per il main */
     code_put(OP_CALL);
@@ -82,7 +84,7 @@ void program_gen(AST ast, SymbolTable *sym) {
     code_put(OP_HALT);
 
     /* Genera il codice per le funzioni */
-    ast_gen(ast->child[1], sym);
+    ast_gen(ast->child[2], sym);
 
     Entry *e=symtab_lookup(sym, sc_make_id("main"));
     assert(e!=NULL);
@@ -91,17 +93,70 @@ void program_gen(AST ast, SymbolTable *sym) {
     code_put16_at(e->address, call_addr);
 }
 
+/* Il prototipo di una funzione è una dichiarazione della sua interfaccia, senza codice */
+
+void prototype_check(AST ast, SymbolTable *sym) {
+	Entry *e = symtab_lookup(sym, ast->id);
+
+	if (e == NULL) {
+		// Funzione né dichiarata né definita
+		e=symtab_define(sym, ast->id, ET_FUNCTION, ast->line);
+    	e->value_type=ast->value_type;
+    	SymbolTable *local_sym=make_symtab(sym);
+    	e->sym=local_sym;
+     	e->func_defined=false;
+      	e->func_generated=false;
+       	e->incomplete_addresses = make_address_list();
+    	symtab_set_function_definition(local_sym, e);
+    	ast_check(ast->child[0], local_sym); /* Parametri formali */
+     	// Non è presente il corpo della funzione
+	} else {
+		// Già dichiarata o definita
+        if (e->entry_type != ET_FUNCTION)
+            error(ast->line, "'%s' è un identificatore già definito", ast->id);
+        else
+        	error(ast->line, "La funzione %s è già stata dichiarata", ast->id);
+	}
+}
+
+void prototype_gen(AST ast, SymbolTable *sym) {
+	// Vuoto
+}
 
 /* Un nodo 'func_def' rappresenta la definizione di una funzione */
 
 void func_def_check(AST ast, SymbolTable *sym) {
-    Entry *e=symtab_define(sym, ast->id, ET_FUNCTION, ast->line);
-    e->value_type=ast->value_type;
-    SymbolTable *local_sym=make_symtab(sym);
-    e->sym=local_sym;
-    symtab_set_function_definition(local_sym, e);
-    ast_check(ast->child[0], local_sym); /* Parametri formali */
-    ast_check(ast->child[1], local_sym); /* Corpo della funzione */
+	Entry *e = symtab_lookup(sym, ast->id);
+
+	if (e == NULL) {
+		e=symtab_define(sym, ast->id, ET_FUNCTION, ast->line);
+    	e->value_type=ast->value_type;
+     	SymbolTable *local_sym=make_symtab(sym);
+     	e->sym=local_sym;
+       	e->func_generated=false;
+        e->incomplete_addresses = make_address_list();
+      	symtab_set_function_definition(local_sym, e);
+       	ast_check(ast->child[0], e->sym); /* Parametri formali */
+	} else {
+		// Esiste già una dichiarazione (o un'altro identificatore uguale)
+		if (e->entry_type != ET_FUNCTION)
+            error(ast->line, "'%s' è un identificatore già utilizzato", ast->id);
+
+		// Funzione con due definizioni (due corpi di codice)
+		if (e->func_defined) {
+			error(ast->line, "Funzione '%s' definita due volte.", ast->id);
+		}
+
+		// Controlli del matching del prototipo
+		if (e->value_type != ast->value_type) {
+			error(ast->line, "Tipo della funzione '%s' diverso dal prototipo.", ast->id);
+		}
+
+		// TODO: controllo della corrispondenza dei parametri formali
+	}
+
+	e->func_defined=true;
+    ast_check(ast->child[1], e->sym); /* Corpo della funzione */
 }
 
 void func_def_gen(AST ast, SymbolTable *sym) {
@@ -112,6 +167,11 @@ void func_def_gen(AST ast, SymbolTable *sym) {
 
     /* Genera il codice dei figli */
     seq_gen(ast, local_sym);
+
+    // Risoluzione delle chiamate senza indirizzo
+    e->func_generated=true;
+    resolve_address_list(e->incomplete_addresses, e->address);
+    e->incomplete_addresses = destroy_address_list(e->incomplete_addresses);
 }
 
 /* Un nodo 'type' rappresenta un tipo */
@@ -810,11 +870,23 @@ void func_call_check(AST ast, SymbolTable *sym) {
 void func_call_gen(AST ast, SymbolTable *sym) {
     Entry *e=symtab_lookup(sym, ast->id);
     assert(e!=NULL);
+    if (!e->func_defined) {
+   		error(ast->line, "Funzione chiamata '%s' non è mai stata definita.", ast->id);
+    }
+
     /* Genera i parametri attuali */
     seq_gen(ast, sym);
     /* Genera la chiamata */
     code_put(OP_CALL);
-    code_put16(e->address);
+
+    if (e->func_generated) {
+    	// Caso 1: il corpo della funzione era scritto prima di questa chiamata
+    	code_put16(e->address);
+    } else {
+    	// Caso 2: Bisogna tracciare la posizione della chiamata e risolverla più tardi
+     	e->incomplete_addresses = address_list_append(e->incomplete_addresses, code_address());
+      	code_put16(0);
+    }
 }
 
 /* Un nodo 'actuals' rappresenta l'insieme dei parametri attuali */

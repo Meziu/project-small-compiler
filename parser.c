@@ -11,6 +11,7 @@
  -------------------------------------------------------*/
 
 static AST parse_const(void);
+static AST parse_prototype(void);
 static AST parse_func_def(void);
 static AST parse_type(void);
 static AST parse_formals(void);
@@ -53,6 +54,13 @@ AST parse_program(void) {
 		constants = make_ast2(seq_check, seq_gen, sc_current_line(), constants, c);
 	}
 
+	// I prototipi sono da inserire dopo le costanti e prima delle definizioni delle funzioni.
+	AST prototypes = NULL;
+	while (sc_current() == TOK_PROTOTYPE) {
+		AST p = parse_prototype();
+		prototypes = make_ast2(seq_check, seq_gen, sc_current_line(), prototypes, p);
+	}
+
     AST defs=parse_func_def();
     while (sc_current() != TOK_EOF) {
         AST fd=parse_func_def();
@@ -60,8 +68,8 @@ AST parse_program(void) {
                            defs, fd);
     }
     sc_match(TOK_EOF);
-    AST program=make_ast2(program_check, program_gen, sc_current_line(),
-            constants, defs);
+    AST program=make_ast3(program_check, program_gen, sc_current_line(),
+            constants, prototypes, defs);
     return program;
 }
 
@@ -85,6 +93,22 @@ static AST parse_const(void) {
     st->id=id;
     st->value_type=type->value_type;
     return st;
+}
+
+static AST parse_prototype(void) {
+	sc_match(TOK_PROTOTYPE);
+    AST type=parse_type();
+    char *id=sc_current_id();
+    sc_match(TOK_ID);
+    sc_match('(');
+    AST formals=parse_formals();
+    sc_match(')');
+    sc_match('!');
+
+    AST prototype=make_ast1(prototype_check, prototype_gen, type->line, formals);
+    prototype->id=id;
+    prototype->value_type=type->value_type;
+    return prototype;
 }
 
 static AST parse_func_def(void) {

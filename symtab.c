@@ -2,6 +2,7 @@
 #include <assert.h>
 
 #include "symtab.h"
+#include "code.h"
 #include "error.h"
 
 /*--------------------------------------------------------
@@ -171,4 +172,34 @@ static Entry *make_entry(char *id, EntryType type, int line) {
     e->link=NULL;
 
     return e;
+}
+
+AddressList make_address_list() {
+	return NULL;
+}
+
+AddressList destroy_address_list(AddressList list) {
+	if (list == NULL) {
+		return NULL;
+	}
+
+	list->next = destroy_address_list(list->next);
+
+	if (list->next == NULL) {
+		free(list);
+	}
+
+	return NULL;
+}
+
+AddressList address_list_append(AddressList list, short addr) {
+	AddressNode* n = malloc(sizeof(AddressNode));
+	n->addr = addr;
+	n->next = list;
+	return n;
+}
+void resolve_address_list(AddressList list, short actual_address) {
+	for (AddressNode* n = list; n != NULL; n = n->next) {
+		code_put16_at(actual_address, n->addr);
+	}
 }

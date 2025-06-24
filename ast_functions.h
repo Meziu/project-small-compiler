@@ -17,6 +17,9 @@ void seq_gen(AST ast, SymbolTable *sym);
 void program_check(AST ast, SymbolTable *sym);
 void program_gen(AST ast, SymbolTable *sym);
 
+void prototype_check(AST ast, SymbolTable *sym);
+void prototype_gen(AST ast, SymbolTable *sym);
+
 void func_def_check(AST ast, SymbolTable *sym);
 void func_def_gen(AST ast, SymbolTable *sym);
 

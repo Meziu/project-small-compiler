@@ -7,6 +7,7 @@ enum {
     TOK_REAL,
     TOK_VOID,
     TOK_CONST,
+    TOK_PROTOTYPE,
     TOK_IF,
     TOK_ELSE,
     TOK_WHILE,

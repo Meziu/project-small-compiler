@@ -1,0 +1,11 @@
+prototype int quadrato(int x)!
+
+void main() {
+    int n!
+    read "Dimmi un numero: ", n!
+    write "Il quadrato di ", n, " è ", quadrato(n)!
+}
+
+int quadrato(int x) {
+    return x*x!
+}
