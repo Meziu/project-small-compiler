@@ -1,0 +1,43 @@
+const int iterazioni = 3!
+const int start_seed = 353!
+const real MAX_VALUE = 2147483647.0!
+
+prototype int pseudo_random(int seed)!
+prototype real normalize(real x)!
+
+void main() {
+	int num = start_seed!
+	real percentage!
+	int i!
+
+	// Generazione di numeri casuale
+	write "Generiamo ", iterazioni, " numeri casuali:"!
+	for i in 1:iterazioni {
+		num = pseudo_random(num)!
+		write "#", i, " Numero generato: ", num!
+	}
+
+	i = 0!
+
+	write ""!
+	write "Ora generiamo numeri (tra 0 e 1) finchè non otteniamo un numero maggiore di 0.8:"!
+	do {
+		i = i+1!
+		num = pseudo_random(num)!
+		percentage = normalize(num / MAX_VALUE)!
+		write "Percentuale ottenuta: ", percentage, "%"!
+	} while (percentage < 0.8)!
+
+	write "Per ottenere un numero tra 0,8 e 1 ci sono voluti ", i, " tentativi."!
+}
+
+// Generatore lineare congruenziale
+int pseudo_random(int seed) {
+	int s_seed = ( seed * 1103515245 ) + 12345!
+	return s_seed!
+}
+
+// Normalizza un numero reale compreso tra -1 e 1
+real normalize(real x) {
+	return (x + 1.0) / 2.0!
+}
