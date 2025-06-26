@@ -9,3 +9,23 @@ void main() {
 int quadrato(int x) {
     return x*x!
 }
+
+// Invalido
+//int quadrato(int z) {
+//    return z*z!
+//}
+
+// Invalido
+//real quadrato(int x) {
+//    return x*x!
+//}
+
+// Invalido
+//int quadrato(real x) {
+//    return x*x!
+//}
+
+// Invalido
+//int quadrato(int x, int y) {
+//    return x*y!
+//}

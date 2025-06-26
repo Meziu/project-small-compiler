@@ -152,7 +152,46 @@ void func_def_check(AST ast, SymbolTable *sym) {
 			error(ast->line, "Tipo della funzione '%s' diverso dal prototipo.", ast->id);
 		}
 
-		// TODO: controllo della corrispondenza dei parametri formali
+		// Controllo di validità dei parametri.
+
+		SymbolTable *local_sym=make_symtab(sym);
+		ast_check(ast->child[0], local_sym);  // Parametri formali
+		Entry *f=symtab_define(local_sym, ast->id, ET_FUNCTION, ast->line);
+    	f->value_type=ast->value_type;
+     	f->sym=local_sym;
+		symtab_set_function_definition(local_sym, f);
+
+		if (symtab_get_formals_counter(e->sym) != symtab_get_formals_counter(f->sym)) {
+			error(ast->line, "Definizione della funzione '%s' ha un numero diverso di parametri formali rispetto al suo prototipo.", ast->id);
+		}
+
+		Entry* prototype_formal = symtab_get_first_formal(e->sym);
+		Entry* definition_formal = symtab_get_first_formal(f->sym);
+		int i = 0;
+		while (prototype_formal != NULL) {
+			i++;
+
+			if (definition_formal->id != prototype_formal->id) {
+				error(ast->line, "Parametro formale in posizione %d ('%s') ha un nome diverso dal suo corrispondente '%s' nel prototipo.",
+					i,
+					definition_formal->id,
+					prototype_formal->id);
+			}
+
+			if (definition_formal->value_type != prototype_formal->value_type) {
+				error(ast->line, "Parametro formale '%s' è di tipo diverso dal suo corrispondente nel prototipo.",
+					definition_formal->id,
+					prototype_formal->id);
+			}
+
+			Entry *formal = symtab_lookup(e->sym, prototype_formal->id);
+			assert(formal != NULL);
+			formal->id = definition_formal->id;
+			//prototype_formal->id = definition_formal->id;
+
+			prototype_formal = prototype_formal->next_formal;
+			definition_formal = definition_formal->next_formal;
+		}
 	}
 
 	e->func_defined=true;
