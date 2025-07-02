@@ -1,10 +1,14 @@
-<program> ::= <func_def> (<func_def>)* EOF
+<program> ::= (<const>)* (<prototype>)* <func_def> (<func_def>)* EOF
+
+<const> ::= CONST <type> ID "=" <expr> "!"
+
+<prototype> ::= PROTOTYPE <type> ID "(" <formals> ")" "!"
 
 <func_def> ::= <type> ID "(" <formals> ")" <body>
 
 <type> ::= INT | REAL | VOID
 
-<formals> ::= 
+<formals> ::=
         | <formal> ("," <formal>)*
 
 <formal> ::= <type> ID
@@ -16,6 +20,8 @@
 <statement> ::=  <assignment>
                | <if>
                | <while>
+               | <do_while>
+               | <for>
                | <write>
                | <read>
                | <return>
@@ -29,6 +35,10 @@
           | ELSE <if>
 
 <while> ::= WHILE <expr> <block>
+
+<do_while> ::= DO <block> WHILE <expr> "!"
+
+<for> ::= FOR ID IN <expr> ":" <expr> <block>
 
 <block> ::= '{' (statement)* '}'
 
@@ -69,9 +79,3 @@
 
 
 <actual> ::= <expr>
-           
-         
-
-
-
-
